@@ -7,10 +7,8 @@ def my_normalize(x):
     return x
 
 def myPCA(x,k):
-    #Normalizing data
-    x_new=my_normalize(x)
     #Calculating covariance matrix
-    sigma = 1 / 2 * np.cov(x_new.T)
+    sigma = 1 / 2 * np.cov(x.T)
     #Calculating eigenvectors and values
     eigenvalues, eigenvectors = np.linalg.eigh(sigma)
     #Sorting eigenvectors/values according to eigenvalues in descending order
@@ -35,7 +33,9 @@ for i in range(0, len(output)):
     else:
         col.append('blue')
 
-output=my_normalize(output)
+
+#Normalizing data
+data=my_normalize(data)
 #loading eigenvectors to variable
 eigenvectors=myPCA(data, 8)
 #calculating 1st and 2nd principal component
