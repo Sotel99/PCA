@@ -50,6 +50,6 @@ plt.xlabel('PC1')
 plt.ylabel('PC2')
 plt.title('PC1 VS PC2')
 plt.show()
-''' My conclusion is that PC1 and especially PC2 are correlated
+''' My conclusion is that PC1 and PC2 are correlated
 with the price of houses and that variance explained by PC1 is bigger than PC2.
 '''
