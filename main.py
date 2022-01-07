@@ -1,71 +1,55 @@
-"""Primary application entrypoint.
-"""
-import locale
-import logging
-import os
-import sys
-from typing import List, Optional
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-from pip._internal.cli.autocompletion import autocomplete
-from pip._internal.cli.main_parser import parse_command
-from pip._internal.commands import create_command
-from pip._internal.exceptions import PipError
-from pip._internal.utils import deprecation
+def my_normalize(x):
+    x = (x - np.mean(x, axis=0)) / np.std(x, axis=0)
+    return x
 
-logger = logging.getLogger(__name__)
+def myPCA(x,k):
+    #Normalizing data
+    x_new=my_normalize(x)
+    #Calculating covariance matrix
+    sigma = 1 / 2 * np.cov(x_new.T)
+    #Calculating eigenvectors and values
+    eigenvalues, eigenvectors = np.linalg.eigh(sigma)
+    #Sorting eigenvectors/values according to eigenvalues in descending order
+    idx=np.argsort(eigenvalues)[::-1]
+    eigenvalues=eigenvalues[idx]
+    eigenvectors=eigenvectors[:,idx]
 
+    return eigenvectors[:k]
 
-# Do not import and use main() directly! Using it directly is actively
-# discouraged by pip's maintainers. The name, location and behavior of
-# this function is subject to change, so calling it directly is not
-# portable across different pip versions.
+#loading data
+url = "http://lib.stat.cmu.edu/datasets/boston"
+df = pd.read_csv(url, sep="\s+", skiprows=22, header=None)
+data = np.hstack([df.values[::2, :], df.values[1::2, :2]])
+output = df.values[1::2, 2]
+#creating list which colours each house depending on its price
+col=[]
+for i in range(0, len(output)):
+    if output[i]<=15:
+        col.append('green')
+    elif output[i]>=30:
+        col.append('magenta')
+    else:
+        col.append('blue')
 
-# In addition, running pip in-process is unsupported and unsafe. This is
-# elaborated in detail at
-# https://pip.pypa.io/en/stable/user_guide/#using-pip-from-your-program.
-# That document also provides suggestions that should work for nearly
-# all users that are considering importing and using main() directly.
-
-# However, we know that certain users will still want to invoke pip
-# in-process. If you understand and accept the implications of using pip
-# in an unsupported manner, the best approach is to use runpy to avoid
-# depending on the exact location of this entry point.
-
-# The following example shows how to use runpy to invoke pip in that
-# case:
-#
-#     sys.argv = ["pip", your, args, here]
-#     runpy.run_module("pip", run_name="__main__")
-#
-# Note that this will exit the process after running, unlike a direct
-# call to main. As it is not safe to do any processing after calling
-# main, this should not be an issue in practice.
-
-
-def main(args=None):
-    # type: (Optional[List[str]]) -> int
-    if args is None:
-        args = sys.argv[1:]
-
-    # Configure our deprecation warnings to be sent through loggers
-    deprecation.install_warning_logger()
-
-    autocomplete()
-
-    try:
-        cmd_name, cmd_args = parse_command(args)
-    except PipError as exc:
-        sys.stderr.write(f"ERROR: {exc}")
-        sys.stderr.write(os.linesep)
-        sys.exit(1)
-
-    # Needed for locale.getpreferredencoding(False) to work
-    # in pip._internal.utils.encoding.auto_decode
-    try:
-        locale.setlocale(locale.LC_ALL, "")
-    except locale.Error as e:
-        # setlocale can apparently crash if locale are uninitialized
-        logger.debug("Ignoring error %s when setting locale", e)
-    command = create_command(cmd_name, isolated=("--isolated" in cmd_args))
-
-    return command.main(cmd_args)
+output=my_normalize(output)
+#loading eigenvectors to variable
+eigenvectors=myPCA(data, 8)
+#calculating 1st and 2nd principal component
+PC1 = data.dot(eigenvectors[0,:].T)
+PC2 = data.dot(eigenvectors[1,:].T)
+PC1=my_normalize(PC1)
+PC2=my_normalize(PC2)
+#plotting PC1 vs PC2 graph
+for i in range(len(col)):
+    plt.scatter(x=PC1[i], y=PC2[i], color=col[i])
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.title('PC1 VS PC2')
+plt.show()
+''' My conclusion is that PC1 and especially PC2 are correlated
+with the price of houses and that variance explained by PC1 is bigger than PC2.
+'''
